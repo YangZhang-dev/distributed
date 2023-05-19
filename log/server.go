@@ -4,30 +4,21 @@ import (
 	"io/ioutil"
 	stlog "log"
 	"net/http"
-	"os"
 )
 
 var log *stlog.Logger
 
-// 写入文件的路径
-type fileLog string
-
-// fileLog 实现了io.Writer中的Write方法
-func (fl fileLog) Write(data []byte) (int, error) {
-	f, err := os.OpenFile(string(fl), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-	return f.Write(data)
-}
+const (
+	handlePath = "/log"
+	prefix     = "go: "
+)
 
 func Run(destination string) {
-	log = stlog.New(fileLog(destination), "go: ", stlog.LstdFlags)
+	log = stlog.New(fileLog(destination), prefix, stlog.LstdFlags)
 }
 
 func RegisterHandlers() {
-	http.HandleFunc("/log", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc(handlePath, func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Method {
 		case http.MethodPost:
 			msg, err := ioutil.ReadAll(request.Body)
