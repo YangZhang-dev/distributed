@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	registry.SetupRegistryService()
 	http.Handle("/services", &registry.RegistryService{})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -24,7 +25,7 @@ func main() {
 	}()
 
 	go func() {
-		fmt.Printf("registry service started. Press any key to stop. ")
+		fmt.Printf("registry service started. Press any key to stop. \n")
 		var s string
 		fmt.Scanln(&s)
 		server.Shutdown(ctx)

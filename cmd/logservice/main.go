@@ -10,18 +10,22 @@ import (
 )
 
 const (
-	host        = "127.0.0.1"
-	port        = ":8888"
-	serviceName = registry.LogService
-	logFileName = "distributed.log"
+	host         = "127.0.0.1"
+	port         = ":9988"
+	serviceName  = registry.LogService
+	updateURL    = "/services"
+	heartbeatURL = "/heartbeat"
 )
 
 func main() {
-	log.Run(logFileName)
-
+	log.Run()
+	serviceAddress := fmt.Sprintf("http://%v%v", host, port)
 	r := registry.Registration{
-		ServiceName: serviceName,
-		ServiceURL:  fmt.Sprintf("%v%v", host, port),
+		ServiceName:      serviceName,
+		ServiceURL:       serviceAddress,
+		RequiredServices: make([]registry.ServiceName, 0),
+		ServiceUpdateURL: serviceAddress + updateURL,
+		HeartbeatURL:     serviceAddress + heartbeatURL,
 	}
 	ctx, err := service.Start(
 		context.Background(),

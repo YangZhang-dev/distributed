@@ -22,6 +22,7 @@ type studentsHandler struct{}
 // /students/{id}
 // /students/{id}/grades
 func (sh studentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Printf("path of %v has be accessed with method %v", r.URL, r.Method)
 	pathSegments := strings.Split(r.URL.Path, "/")
 	switch len(pathSegments) {
 	case 2:

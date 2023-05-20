@@ -1,7 +1,7 @@
 package log
 
 import (
-	"io/ioutil"
+	"io"
 	stlog "log"
 	"net/http"
 )
@@ -9,26 +9,27 @@ import (
 var log *stlog.Logger
 
 const (
-	handlePath = "/log"
-	prefix     = "go: "
+	handlePath  = "/log"
+	prefix      = "[go] - "
+	logFileName = "./cmd/logservice/distributed.log"
 )
 
-func Run(destination string) {
-	log = stlog.New(fileLog(destination), prefix, stlog.LstdFlags)
+func Run() {
+	log = stlog.New(fileLog(logFileName), prefix, stlog.LstdFlags)
 }
 
 func RegisterHandlers() {
-	http.HandleFunc(handlePath, func(writer http.ResponseWriter, request *http.Request) {
-		switch request.Method {
+	http.HandleFunc(handlePath, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
 		case http.MethodPost:
-			msg, err := ioutil.ReadAll(request.Body)
-			if err != nil {
-				writer.WriteHeader(http.StatusBadRequest)
+			msg, err := io.ReadAll(r.Body)
+			if err != nil || len(msg) == 0 {
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			write(string(msg))
 		default:
-			writer.WriteHeader(http.StatusMethodNotAllowed)
+			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 	})

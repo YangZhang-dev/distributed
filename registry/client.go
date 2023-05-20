@@ -4,13 +4,33 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"net/url"
+	"sync"
 )
 
 func RegisterService(r Registration) error {
+	// 注册每个服务自己的心跳url
+	heartbeatURL, err := url.Parse(r.HeartbeatURL)
+	if err != nil {
+		return err
+	}
+	http.HandleFunc(heartbeatURL.Path, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// 注册每个服务自己的更新url
+	serviceUpdateURL, err := url.Parse(r.ServiceUpdateURL)
+	if err != nil {
+		return err
+	}
+	http.Handle(serviceUpdateURL.Path, &serviceUpdateHandler{})
+
+	// 向注册服务发送注册请求
 	buffer := new(bytes.Buffer)
 	encoder := json.NewEncoder(buffer)
-	err := encoder.Encode(r)
+	err = encoder.Encode(r)
 	if err != nil {
 		return err
 	}
@@ -19,7 +39,7 @@ func RegisterService(r Registration) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed register service and return code is %v", resp.StatusCode)
+		return fmt.Errorf("failed register services and return code is %v", resp.StatusCode)
 	}
 	return nil
 }
@@ -34,7 +54,71 @@ func ShutdownService(r Registration) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed deregister service and return code is %v", resp.StatusCode)
+		return fmt.Errorf("failed deregister services and return code is %v", resp.StatusCode)
 	}
 	return nil
+}
+
+type serviceUpdateHandler struct{}
+
+// 当依赖项更新后注册服务调用的接口
+func (suh serviceUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	dec := json.NewDecoder(r.Body)
+	var p patch
+	err := dec.Decode(&p)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Updated received %v \n", p)
+	prov.Update(p)
+}
+
+type providers struct {
+	services map[ServiceName][]string
+	mutex    *sync.RWMutex
+}
+
+var prov = providers{
+	services: make(map[ServiceName][]string, 0),
+	mutex:    new(sync.RWMutex),
+}
+
+func (p *providers) Update(pat patch) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	for _, patchEntry := range pat.Added {
+		serviceName := patchEntry.Name
+		if _, ok := p.services[serviceName]; !ok {
+			p.services[serviceName] = make([]string, 0)
+		}
+		p.services[serviceName] = append(p.services[serviceName], patchEntry.URL)
+	}
+
+	for _, patchEntry := range pat.Removed {
+		serviceName := patchEntry.Name
+		if providerURLs, ok := p.services[serviceName]; ok {
+			for i := range providerURLs {
+				if providerURLs[i] == patchEntry.URL {
+					p.services[serviceName] = append(providerURLs[:i], providerURLs[i+1:]...)
+				}
+			}
+		}
+	}
+}
+
+func (p *providers) Get(name ServiceName) []string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	urls := p.services[name]
+	return urls
+}
+func GetProvider(name ServiceName) []string {
+	return prov.Get(name)
 }
