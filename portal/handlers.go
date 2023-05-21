@@ -14,7 +14,6 @@ import (
 
 func RegisterHandlers() {
 	http.Handle("/", http.RedirectHandler("/students", http.StatusPermanentRedirect))
-
 	h := new(studentsHandler)
 	http.Handle("/students", h)
 	http.Handle("/students/", h)
@@ -52,7 +51,7 @@ func (sh studentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (studentsHandler) renderStudents(w http.ResponseWriter) {
+func (sh studentsHandler) renderStudents(w http.ResponseWriter) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -80,7 +79,7 @@ func (studentsHandler) renderStudents(w http.ResponseWriter) {
 	rootTemplate.Lookup("students.html").Execute(w, s)
 }
 
-func (studentsHandler) renderStudent(w http.ResponseWriter, id int) {
+func (sh studentsHandler) renderStudent(w http.ResponseWriter, id int) {
 
 	var err error
 	defer func() {

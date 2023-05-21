@@ -10,6 +10,7 @@ import (
 	"sync"
 )
 
+// RegisterService 在注册中心进行注册
 func RegisterService(r Registration) error {
 	// 注册每个服务自己的心跳url
 	heartbeatURL, err := url.Parse(r.HeartbeatURL)
@@ -43,6 +44,8 @@ func RegisterService(r Registration) error {
 	}
 	return nil
 }
+
+// ShutdownService 终止服务
 func ShutdownService(r Registration) error {
 	request, err := http.NewRequest(http.MethodDelete, ServicesURL, bytes.NewBuffer([]byte(r.ServiceName)))
 	if err != nil {
@@ -79,16 +82,19 @@ func (suh serviceUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	prov.Update(p)
 }
 
+// registry client记录的服务信息
 type providers struct {
 	services map[ServiceName][]string
 	mutex    *sync.RWMutex
 }
 
+// 所有服务共享一个providers
 var prov = providers{
 	services: make(map[ServiceName][]string, 0),
 	mutex:    new(sync.RWMutex),
 }
 
+// Update 根据patch来更新client的服务信息
 func (p *providers) Update(pat patch) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -113,12 +119,15 @@ func (p *providers) Update(pat patch) {
 	}
 }
 
-func (p *providers) Get(name ServiceName) []string {
+// 在client端获取指定服务的URLs
+func (p *providers) get(name ServiceName) []string {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	urls := p.services[name]
 	return urls
 }
+
+// GetProvider 在client端获取指定服务的URLs
 func GetProvider(name ServiceName) []string {
-	return prov.Get(name)
+	return prov.get(name)
 }

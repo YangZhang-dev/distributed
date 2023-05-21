@@ -9,6 +9,7 @@ import (
 	stlog "log"
 )
 
+// SetClientLogger 将服务的log的Write方法重新为向log service发送请求
 func SetClientLogger(serviceURL string, clientService registry.ServiceName) {
 	stlog.SetPrefix(fmt.Sprintf("[%v] - ", clientService))
 	stlog.SetFlags(0)

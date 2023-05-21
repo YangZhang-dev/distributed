@@ -14,10 +14,12 @@ const (
 	logFileName = "./cmd/logservice/distributed.log"
 )
 
+// Run 将log service的日志写入文件
 func Run() {
 	log = stlog.New(fileLog(logFileName), prefix, stlog.LstdFlags)
 }
 
+// RegisterHandlers log service的handlers
 func RegisterHandlers() {
 	http.HandleFunc(handlePath, func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

@@ -23,6 +23,7 @@ var reg = registry{
 
 type RegistryService struct{}
 
+// 注册中心handlers
 func (rs *RegistryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -62,6 +63,7 @@ func (rs *RegistryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 循环进行健康检查
 func (r *registry) heartbeat(freq time.Duration) {
 	times := 1
 	for {
@@ -100,6 +102,7 @@ func (r *registry) heartbeat(freq time.Duration) {
 
 var once sync.Once
 
+// SetupRegistryService 启动健康检查
 func SetupRegistryService() {
 	once.Do(func() {
 		go reg.heartbeat(10 * time.Second)

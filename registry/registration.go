@@ -1,5 +1,6 @@
 package registry
 
+// Registration 服务注册信息
 type Registration struct {
 	// 服务名
 	ServiceName ServiceName

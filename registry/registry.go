@@ -9,6 +9,7 @@ import (
 	"sync"
 )
 
+// registry server记录的服务信息
 type registry struct {
 	registrations []Registration
 	mutex         *sync.RWMutex
@@ -48,7 +49,7 @@ func (r *registry) remove(name ServiceName) error {
 }
 
 // 将依赖变更通知给需要通知的服务
-func (r registry) notify(fullPatch patch) {
+func (r *registry) notify(fullPatch patch) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	for _, reg := range r.registrations {
@@ -80,6 +81,8 @@ func (r registry) notify(fullPatch patch) {
 		}(reg)
 	}
 }
+
+// 当一个服务启动时，发送所有它需要的依赖项
 func (r *registry) sendRequiredServices(reg Registration) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -101,7 +104,7 @@ func (r *registry) sendRequiredServices(reg Registration) error {
 	return nil
 }
 
-// 向一个服务发送依赖变更
+// 向服务发送依赖变更
 func (r *registry) sendPatch(p patch, url string) error {
 	d, err := json.Marshal(p)
 	if err != nil {
