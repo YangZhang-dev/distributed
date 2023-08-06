@@ -1,0 +1,6 @@
+run = "make"
+
+entrypoint = "main.go"
+
+[nix]
+channel = "stable-22_11"
